@@ -9,9 +9,23 @@ const schema = Joi.object({
 });
 
 exports = module.exports = {
-  Accept: [ 'application/json-rpc', 'application/json' ],
-  ContentType: 'application/json-rpc',
-  serialize: thing => {
+  accept: ['application/json','application/json-rpc'],
+  contentType: 'application/json-rpc',
+  matchesRequest: req => {
+    return exports.accept.includes(req.headers['content-type']) && (
+      req.body.jsonrpc === '2.0' ||
+      Array.isArray(req.body.jsonrpc) && req.body.jsonrpc.every(call => call.jsonrpc === '2.0')
+    );
+  },
+  validate: req => {
+    // json-rpc can batch multiple calls into a single request
+    let schemas = Joi.alternatives().try(schema , Joi.array().items(schema));
+    let result = schemas.validate(req.body);
+    if(result.error) throw result.error;
+    return result.value;
+  },
+
+  buildResponse: thing => {
     let envelop = result => {
       let response = { jsonrpc: '2.0', id: result.id };
 
@@ -37,12 +51,4 @@ exports = module.exports = {
       thing.map(envelop).filter(i => i !== null) :
       envelop(thing);
   },
-
-  deserialize: requestBody => {
-    let message = JSON.parse(requestBody);
-    let schemas = Joi.alternatives().try(schema , Joi.array().items(schema));
-    let result = schemas.validate(message);
-    if(result.error) throw result.error;
-    return result.value;
-  }
 };

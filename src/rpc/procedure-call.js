@@ -11,7 +11,7 @@ const getSchema = (paramsSchema = Joi.any()) =>
     }).required().options({ allowUnknown: true }),
     params: paramsSchema,
     id: Joi.alternatives().try(Joi.number(), Joi.string()).allow(null).default(null),
-  });
+  }).unknown(true);
 
 class ProcedureCall {
   constructor(options) {
@@ -26,9 +26,8 @@ class ProcedureCall {
   }
 
   async execute(deps, state) {
-    return this.method.handle(this.params, deps, state)
-      .then(result => this.result = result)
-      .then(() => this);
+    this.result = await this.method.handle(this.params, deps, state);
+    return this;
   }
 }
 

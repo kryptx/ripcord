@@ -2,6 +2,7 @@
 
 const deps = require('./ripcord');
 const methods = require('./methods');
+const parsers = require('./body-parsers');
 const transports = require('./rpc/transports');
 const serializers = require('./rpc/serializers');
 const Rpc = require('./rpc/rpc');
@@ -11,10 +12,8 @@ let storage = getStorageModule('cookie');
 let rpc = new Rpc({ methods, deps });
 let http = new transports.HttpTransport({
   rpc,
-  serializers: {
-    'application/json': serializers.JsonRpc2,
-    'application/json-rpc': serializers.JsonRpc2,
-  },
+  parsers: [ parsers.json ],
+  serializers: [ serializers.JsonRpc2 ],
   storage
 });
 
