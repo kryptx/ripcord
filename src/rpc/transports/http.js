@@ -1,29 +1,12 @@
 'use strict';
 
 const Http = require('http');
-const Cookie = require('cookie');
 
 class HttpTransport {
 
-  static async readState(headers) {
-    return Cookie.parse(headers.cookie || '');
-  }
-
-  static async writeState(state, res) {
-    let cookies = [];
-    let keys = Object.keys(state);
-    for(let key of keys) {
-      cookies.push(Cookie.serialize(key, state[key]));
-    }
-    res.setHeader('Set-Cookie', cookies);
-  }
-
-  constructor({ rpc, serializers, readState, writeState }) {
+  constructor({ rpc, serializers, storage }) {
     this.rpc = rpc;
     this.serializers = serializers;
-
-    readState = readState || this.readState;
-    writeState = writeState || this.writeState;
 
     this.server = Http.createServer(async (req, res) => {
       let serializer = this.getSerializer(req.headers['content-type']);
@@ -33,7 +16,7 @@ class HttpTransport {
       try {
         let args = await Promise.all([
           this.getBody(req).then(serializer.deserialize),
-          state = readState(req.headers)
+          state = storage.readState(req.headers)
         ]);
         result = await this.rpc.Invoke(...args);
       } catch (err) {
@@ -45,7 +28,7 @@ class HttpTransport {
       }
 
       state = await state;
-      await writeState(state, res);
+      await storage.writeState(state, res);
       let response = serializer.serialize(result);
       if(response) {
         res.writeHead(code, { 'Content-type': serializer.ContentType });

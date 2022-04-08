@@ -1,29 +1,29 @@
 /*eslint-env mocha */
 'use strict';
 
-const StateMarshal = require('./state-marshal');
+const CookieStorage = require('./cookie');
 const Assert = require('chai').assert;
+
+const storage = new CookieStorage();
 
 // name like "modem"
 const endec = async orig => {
-  let encoded = await StateMarshal.encode(orig);
-  let decoded = await StateMarshal.decode(encoded);
+  let encoded = await storage.encode(orig);
+  let decoded = await storage.decode(encoded);
   Assert.deepEqual(decoded, orig);
 };
 
-describe('State Marshal', () => {
+describe('Cookie Storage', () => {
   it('should unmarshal a whole state object containing multiple encoded objects', async () => {
-    let decode = str => str.toUpperCase();
-    let result = await StateMarshal.unmarshal({ foo: 'foo', bar: 'bar' }, decode);
-    Assert.equal(result.foo, 'FOO');
-    Assert.equal(result.bar, 'BAR');
+    let result = await storage.unmarshal({ foo: '0/eJyrVspLzE1VslJKy89XqgUAIt4EoA', bar: '0/eJyrVspLzE1VslJKSixSqgUAIpsEkQ' });
+    Assert.deepEqual(result.foo, { name: 'foo' });
+    Assert.deepEqual(result.bar, { name: 'bar' });
   });
 
-  it('should marshal state into a state object containing multiple encoded objects', async () => {
-    let encode = obj => { obj.encoded = true; return obj; };
-    let result = await StateMarshal.marshal({ foo: { name: 'foo' }, bar: { name: 'bar' } }, encode);
-    Assert.isTrue(result.foo.encoded);
-    Assert.isTrue(result.bar.encoded);
+  it('should marshal state into a state object containing multiple encoded strings', async () => {
+    let result = await storage.marshal({ foo: { name: 'foo' }, bar: { name: 'bar' } });
+    Assert.isString(result.foo);
+    Assert.isString(result.bar);
   });
 
   it('should encode and decode a simple object', async () => {
